@@ -1,0 +1,18 @@
+Name:			        bildpunkt
+Version:        	0.0.1
+Cabal-Version:  	>= 1.9.2
+License:          GPL
+License-file:     LICENSE
+Build-type:       Simple
+Author:         	Alexander Bau
+Maintainer:       Alexander Bau
+Synopsis:       	Complexity concerned constraint compiler
+Category:         Language      
+Description:      Complexity concerned constraint compiler
+
+Executable bildpunkt
+  Main-is:            Bildpunkt/Main.hs
+  Ghc-options:        -W -fno-warn-incomplete-patterns
+  Build-Depends:      base >= 4.2 && < 5.0
+                    , accelerate == 0.14.*
+                    , JuicyPixels == 3.1.*
