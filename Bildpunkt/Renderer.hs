@@ -32,13 +32,15 @@ toneMap config ray = cond (d >* (constant $ epsilon config))
     trueComponent c = cond (c >* 1) (constant 255) (A.floor $ c * 255)
 
 shadePoint :: Config -> Exp Position -> Exp Color -> Exp Color
-shadePoint config point color = vecAdd ambient direct
+shadePoint config point color = vecAdd (vecTimes ambient color)
+                                       (vecTimes direct  color)
   where
-    ambient  = constant $ ambientLight config
-    direct   = vecScale factor color
-    factor   = vecDot normal $ vecNormalize $ vecSub lightPos point
-    normal   = approxNormal config point
-    lightPos = constant $ P.fst $ pointLight config
+    ambient      = constant $ ambientLight config
+    direct       = vecScale directFactor directColor
+    directFactor = vecDot normal $ vecNormalize $ vecSub directPos point
+    normal       = approxNormal config point
+    directPos    = constant $ P.fst $ pointLight config
+    directColor  = constant $ P.snd $ pointLight config
 
 approxNormal :: Config -> Exp Position -> Exp Normal
 approxNormal config point = vecNormalize $ lift (nX, nY, nZ)

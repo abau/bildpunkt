@@ -24,6 +24,6 @@ main = savePngImage "test.png" $ ImageRGB8 $ generateImage writePixel resW resH
                                                     )
                                             $ plane white (0,1,0)
                           , backgroundColor = black
-                          , pointLight      = ((3,3,2), (0.8, 0.8, 0.8))
-                          , ambientLight    = (0.2, 0.2, 0.2)
+                          , pointLight      = ((3,3,2), (0.8, 0.7, 0.7))
+                          , ambientLight    = (0.3, 0.3, 0.3)
                           }

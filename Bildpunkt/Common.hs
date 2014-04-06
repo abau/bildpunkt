@@ -50,6 +50,11 @@ vecSub a b = vecAdd a (vecInvert b)
 vecScale :: Exp Float -> Exp Vector -> Exp Vector
 vecScale f = lift1 $ \(x :: Exp Float, y :: Exp Float, z :: Exp Float) -> (f * x, f * y, f * z)
 
+vecTimes :: Exp Vector -> Exp Vector -> Exp Vector
+vecTimes = lift2 $ \(x :: Exp Float, y :: Exp Float, z :: Exp Float) 
+                    (u :: Exp Float, v :: Exp Float, w :: Exp Float) 
+                 -> (x * u, y * v, z * w)
+
 vecAdd :: Exp Vector -> Exp Vector -> Exp Vector
 vecAdd = lift2 $ \(x :: Exp Float, y :: Exp Float, z :: Exp Float) 
                   (u :: Exp Float, v :: Exp Float, w :: Exp Float) 
