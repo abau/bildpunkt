@@ -9,4 +9,7 @@ data Config = Config {
   , distanceField       :: DistanceField
   , backgroundThreshold :: Float
   , backgroundColor     :: Color
+  , pointLight          :: PointLight
+  , ambientLight        :: Color
+  , normalApproxEps     :: Float
   }
