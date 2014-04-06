@@ -1,4 +1,4 @@
-import           Data.Array.Accelerate (indexArray,Z(..),(:.)(..),constant)
+import           Data.Array.Accelerate (indexArray,Z(..),(:.)(..))
 import           Codec.Picture (savePngImage,generateImage,DynamicImage(..),PixelRGB8(..))
 import           Bildpunkt.DistanceFields
 import           Bildpunkt.Renderer (render)
@@ -13,6 +13,8 @@ main = savePngImage "test.png" $ ImageRGB8 $ generateImage writePixel resW resH
         (r,g,b) = indexArray colors (Z :. (resH - y - 1) :. x)
 
     camera                 = ((5,0,0), (-1,0,0), 2, 2)
-    resolution@(resW,resH) = (200, 200)
+    resolution@(resW,resH) = (600, 600)
     numSteps               = 10
-    distanceField          = sphere $ constant 1
+    distanceField          = intersection (move (0, 0.8,0) $ sphere 1)
+                           $ intersection (move (0,-0.8,0) $ sphere 1)
+                                          (sphere 1)

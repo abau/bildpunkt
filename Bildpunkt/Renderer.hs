@@ -4,14 +4,15 @@ module Bildpunkt.Renderer
 where
 
 import Data.Array.Accelerate as A
-import Data.Array.Accelerate.Interpreter as I
+--import Data.Array.Accelerate.Interpreter as I
+import Data.Array.Accelerate.CUDA as C
 import Bildpunkt.Common
 
 render :: Camera -> Resolution -> Int -> DistanceField -> Array DIM2 Color
 render camera resolution numSteps f = colors
   where
-    rays   = I.run $ marchAll camera resolution numSteps f
-    colors = I.run $ toneMapAll f rays
+    rays   = C.run $ marchAll camera resolution numSteps f
+    colors = C.run $ toneMapAll f rays
 
 toneMapAll :: DistanceField -> Array DIM2 Ray -> Acc (Array DIM2 Color)
 toneMapAll f = A.map (toneMap f) . use
@@ -23,12 +24,11 @@ toneMap f ray = ( (distanceToRay f ray) <=* (constant 0.01) )
                 )
 
 marchAll :: Camera -> Resolution -> Int -> DistanceField -> Acc (Array DIM2 Ray)
-marchAll camera resolution numSteps f = A.map (march numSteps f)
-                                      $ genRays camera resolution
+marchAll camera resolution numSteps f = 
+  A.map (A.iterate (constant numSteps) $ march f) $ genRays camera resolution
 
-march :: Int -> DistanceField -> Exp Ray -> Exp Ray
-march 0 _ ray = ray
-march i f ray = march (i-1) f $ moveOrigin (distanceToRay f ray) ray
+march :: DistanceField -> Exp Ray -> Exp Ray
+march f ray = moveOrigin (distanceToRay f ray) ray
 
 distanceToRay :: DistanceField -> Exp Ray -> Exp Float
 distanceToRay f ray = f (A.fst ray)
