@@ -9,8 +9,15 @@ type Direction     = Vector
 type Ray           = (Position, Direction)
 type Camera        = (Position, Direction, Float, Float)
 type Resolution    = (Int,Int)
-type Color         = (Int,Int,Int)
-type DistanceField = Exp Vector -> Exp Float
+type Color         = Vector
+type DistanceField = Exp Vector -> Exp (Float, Color)
+
+red,green,blue,black,white :: Color
+red   = (1,0,0)
+green = (0,1,0)
+blue  = (0,0,1)
+black = (0,0,0)
+white = (1,1,1)
 
 moveOrigin :: Exp Float -> Exp Ray -> Exp Ray
 moveOrigin f = lift1 $ \(p :: Exp Position, d :: Exp Direction)

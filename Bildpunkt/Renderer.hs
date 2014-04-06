@@ -8,30 +8,34 @@ import Data.Array.Accelerate as A
 import Data.Array.Accelerate.CUDA as C
 import Bildpunkt.Common
 
-render :: Camera -> Resolution -> Int -> DistanceField -> Array DIM2 Color
+render :: Camera -> Resolution -> Int -> DistanceField -> Array DIM2 (Word8, Word8, Word8)
 render camera resolution numSteps f = colors
   where
     rays   = C.run $ marchAll camera resolution numSteps f
     colors = C.run $ toneMapAll f rays
 
-toneMapAll :: DistanceField -> Array DIM2 Ray -> Acc (Array DIM2 Color)
+toneMapAll :: DistanceField -> Array DIM2 Ray -> Acc (Array DIM2 (Word8, Word8, Word8))
 toneMapAll f = A.map (toneMap f) . use
 
-toneMap :: DistanceField -> Exp Ray -> Exp Color
-toneMap f ray = ( (distanceToRay f ray) <=* (constant 0.01) )
-              ? ( constant (255, 255, 255)
+toneMap :: DistanceField -> Exp Ray -> Exp (Word8, Word8, Word8)
+toneMap f ray = ( d <=* (constant 0.001) )
+              ? ( lift color'
                 , constant (0  , 0  , 0)
                 )
+  where
+    (d, color) = (unlift $ evaluate f ray) :: (Exp Float, Exp Color)
+    (r,g,b)    = unlift color
+    color'     = (A.floor $ r * 255, A.floor $ g * 255, A.floor $ b * 255)
 
 marchAll :: Camera -> Resolution -> Int -> DistanceField -> Acc (Array DIM2 Ray)
 marchAll camera resolution numSteps f = 
   A.map (A.iterate (constant numSteps) $ march f) $ genRays camera resolution
 
 march :: DistanceField -> Exp Ray -> Exp Ray
-march f ray = moveOrigin (distanceToRay f ray) ray
+march f ray = moveOrigin (A.fst $ evaluate f ray) ray
 
-distanceToRay :: DistanceField -> Exp Ray -> Exp Float
-distanceToRay f ray = f (A.fst ray)
+evaluate :: DistanceField -> Exp Ray -> Exp (Float, Color)
+evaluate f ray = f $ A.fst ray
 
 genRays :: Camera -> Resolution -> Acc (Array DIM2 Ray)
 genRays (cPos,cDir,cW,cH) (resW, resH) =
