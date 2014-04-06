@@ -6,13 +6,13 @@ import Data.Array.Accelerate hiding (Vector)
 import Bildpunkt.Common
 
 sphere :: Float -> DistanceField
-sphere r p = vecLength p - (constant r)
+sphere r x = vecLength x - (constant r)
 
 move :: Vector -> DistanceField -> DistanceField
-move v f p = f $ vecSub p (constant v)
+move p f x = f $ vecSub x (constant p)
 
 intersection :: DistanceField -> DistanceField -> DistanceField
-intersection f1 f2 p = cond ( r1 <* r2 ) r2 r1
+intersection f1 f2 x = cond ( r1 <* r2 ) r2 r1
   where
-    r1 = f1 p
-    r2 = f2 p
+    r1 = f1 x
+    r2 = f2 x
