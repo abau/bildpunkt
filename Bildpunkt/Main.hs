@@ -12,9 +12,8 @@ main = savePngImage "test.png" $ ImageRGB8 $ generateImage writePixel resW resH
       where
         (r,g,b) = indexArray colors (Z :. (resH - y - 1) :. x)
 
-    camera                 = ((5,0,0), (-1,0,0), 2, 2)
+    camera                 = ((5,1,0), (-1,0,0), 2, 2)
     resolution@(resW,resH) = (600, 600)
-    numSteps               = 10
-    distanceField          = intersection (move (0, 0.8,0) $ sphere 1)
-                           $ intersection (move (0,-0.8,0) $ sphere 1)
-                                          (sphere 1)
+    numSteps               = 100
+    distanceField          = union (move (0, 0.5,0) $ sphere 1)
+                           $ plane (0,1,0)
