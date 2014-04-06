@@ -20,14 +20,15 @@ toneMapAll config = A.map (toneMap config) . use
 
 toneMap :: Config -> Exp Ray -> Exp (Word8, Word8, Word8)
 toneMap config ray = 
-        ( d <=* (constant 0.001) )
-              ? ( lift color'
-                , constant (0  , 0  , 0)
+        ( d <=* (constant $ backgroundThreshold config) )
+              ? ( trueColor color
+                , trueColor $ constant $ backgroundColor config
                 )
   where
-    (d, color) = (unlift $ evaluate (distanceField config) ray) :: (Exp Float, Exp Color)
-    (r,g,b)    = unlift color
-    color'     = (A.floor $ r * 255, A.floor $ g * 255, A.floor $ b * 255)
+    (d, color)  = (unlift $ evaluate (distanceField config) ray) :: (Exp Float, Exp Color)
+    trueColor c = lift (A.floor $ r * 255, A.floor $ g * 255, A.floor $ b * 255)
+      where
+        (r,g,b) = unlift c
 
 marchAll :: Config -> Acc (Array DIM2 Ray)
 marchAll config = 

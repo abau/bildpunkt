@@ -15,9 +15,11 @@ main = savePngImage "test.png" $ ImageRGB8 $ generateImage writePixel resW resH
         (r,g,b) = indexArray colors (Z :. (resH - y - 1) :. x)
 
     (resW, resH) = resolution config
-    config       = Config { camera        = ((5,1,0), (-1,0,0), 2, 2)
-                          , resolution    = (600, 600)
-                          , numSteps      = 1000
-                          , distanceField = union (move (0,1,0) $ sphere red 1)
-                                          $ plane white (0,1,0)
+    config       = Config { camera              = ((5,1,0), (-1,0,0), 2, 2)
+                          , resolution          = (600, 600)
+                          , numSteps            = 1000
+                          , distanceField       = union (move (0,1,0) $ sphere red 1)
+                                                $ plane white (0,1,0)
+                          , backgroundThreshold = 0.001
+                          , backgroundColor     = black
                           }
