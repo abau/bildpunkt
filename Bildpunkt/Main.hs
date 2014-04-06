@@ -3,18 +3,21 @@ import           Codec.Picture (savePngImage,generateImage,DynamicImage(..),Pixe
 import           Bildpunkt.DistanceFields
 import           Bildpunkt.Common
 import           Bildpunkt.Renderer (render)
+import           Bildpunkt.Config
 
 main :: IO ()
 main = savePngImage "test.png" $ ImageRGB8 $ generateImage writePixel resW resH
   where
-    colors = render camera resolution numSteps distanceField
+    colors = render config
 
     writePixel x y = PixelRGB8 r g b
       where
         (r,g,b) = indexArray colors (Z :. (resH - y - 1) :. x)
 
-    camera                 = ((5,1,0), (-1,0,0), 2, 2)
-    resolution@(resW,resH) = (600, 600)
-    numSteps               = 1000
-    distanceField          = union (move (0,1,0) $ sphere red 1)
-                           $ plane white (0,1,0)
+    (resW, resH) = resolution config
+    config       = Config { camera        = ((5,1,0), (-1,0,0), 2, 2)
+                          , resolution    = (600, 600)
+                          , numSteps      = 1000
+                          , distanceField = union (move (0,1,0) $ sphere red 1)
+                                          $ plane white (0,1,0)
+                          }
