@@ -15,16 +15,15 @@ main = savePngImage "test.png" $ ImageRGB8 $ generateImage writePixel resW resH
         (r,g,b) = indexArray colors (Z :. (resH - y - 1) :. x)
 
     (resW, resH) = resolution config
-    config       = Config { camera              = ((5,1,0), (-1,0,0), 2, 2)
-                          , resolution          = (600, 600)
-                          , numSteps            = 1000
-                          , distanceField       = union ( move   (0,1,0) 
-                                                        $ sphere (1, 0.5, 0.5) 1
-                                                        )
-                                                $ plane white (0,1,0)
-                          , backgroundThreshold = 0.001
-                          , backgroundColor     = black
-                          , pointLight          = ((3,3,2), (0.8, 0.8, 0.8))
-                          , ambientLight        = (0.2, 0.2, 0.2)
-                          , normalApproxEps     = 0.001
+    config       = Config { epsilon         = 0.001
+                          , camera          = ((5,1,0), (-1,0,0), 2, 2)
+                          , resolution      = (600, 600)
+                          , numSteps        = 1000
+                          , distanceField   = union ( move   (0,1,0) 
+                                                    $ sphere (1, 0.5, 0.5) 1
+                                                    )
+                                            $ plane white (0,1,0)
+                          , backgroundColor = black
+                          , pointLight      = ((3,3,2), (0.8, 0.8, 0.8))
+                          , ambientLight    = (0.2, 0.2, 0.2)
                           }

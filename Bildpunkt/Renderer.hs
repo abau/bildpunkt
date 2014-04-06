@@ -20,7 +20,7 @@ toneMapAll :: Config -> Array DIM2 Ray -> Acc (Array DIM2 (Word8, Word8, Word8))
 toneMapAll config = A.map (toneMap config) . use
 
 toneMap :: Config -> Exp Ray -> Exp (Word8, Word8, Word8)
-toneMap config ray = cond (d >* (constant $ backgroundThreshold config))
+toneMap config ray = cond (d >* (constant $ epsilon config))
   (trueColor $ constant $ backgroundColor config)
   (trueColor $ shadePoint config (A.fst ray) color)
   where
@@ -47,7 +47,7 @@ approxNormal config point = vecNormalize $ lift (nX, nY, nZ)
     nY   = (f (vecAdd point epsY)) - (f (vecSub point epsY))
     nZ   = (f (vecAdd point epsZ)) - (f (vecSub point epsZ))
     f    = A.fst . distanceField config
-    eps  = normalApproxEps config
+    eps  = epsilon config
     epsX = constant (eps, 0, 0)
     epsY = constant (0, eps, 0)
     epsZ = constant (0, 0, eps)
