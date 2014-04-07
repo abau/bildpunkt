@@ -11,36 +11,72 @@ import Bildpunkt.Common
 import Bildpunkt.Config
 
 render :: Config -> Array DIM2 (Word8, Word8, Word8)
-render config = colors
-  where
-    rays   = C.run $ marchAll   config
-    colors = C.run $ toneMapAll config rays
+render config = C.run $ let 
+  rays          = marchAll config
+  shadowSamples = evaluateShadowSamples config rays
+  shadings      = A.zipWith (shade config) rays shadowSamples
+  in
+    A.map toneMap shadings
 
-toneMapAll :: Config -> Array DIM2 Ray -> Acc (Array DIM2 (Word8, Word8, Word8))
-toneMapAll config = A.map (toneMap config) . use
+marchAll :: Config -> Acc (Array DIM2 Ray)
+marchAll config = 
+  A.map (A.iterate (constant $ numSteps config) $ march) 
+        (genRays config)
 
-toneMap :: Config -> Exp Ray -> Exp (Word8, Word8, Word8)
-toneMap config ray = cond (d >* (constant $ epsilon config))
-  (trueColor $ constant $ backgroundColor config)
-  (trueColor $ shadePoint config (A.fst ray) color)
   where
-    (d, color)  = (unlift $ evaluate (distanceField config) ray) :: (Exp Float, Exp Color)
-    trueColor c = lift (trueComponent r, trueComponent g, trueComponent b)
-      where
-        (r,g,b) = unlift c
-    
-    trueComponent c = cond (c >* 1) (constant 255) (A.floor $ c * 255)
+    march ray = moveOrigin (A.fst $ evaluate config ray) ray
 
-shadePoint :: Config -> Exp Position -> Exp Color -> Exp Color
-shadePoint config point color = vecAdd (vecTimes ambient color)
-                                       (vecTimes direct  color)
+evaluateShadowSamples :: Config -> Acc (Array DIM2 Ray) -> Acc (Array DIM2 Float)
+evaluateShadowSamples config rays = 
+    A.fold1 min2
+  $ A.zipWith eval (genShadowSamples config)
+                   (A.replicate (lift $ Z:.All:.All:.n) rays)
   where
+    eval t ray = cond (d <* (constant $ epsilon config) )
+                      (constant 0)
+                      (min2 (constant 1) blur)
+      where 
+        d        = A.fst $ distanceField config
+                         $ vecAdd point (vecScale t lightDir)
+        lightDir = vecSub (constant $ P.fst $ pointLight config) point
+        lightD   = vecLength lightDir
+        point    = A.fst ray
+        blur     = ((constant $ shadowBlur config) * d) / (t * lightD)
+
+    n = constant $ numShadowSamples config
+
+shade :: Config -> Exp Ray -> Exp Float -> Exp Color
+shade config ray shadowFactor = cond (d >* (constant $ epsilon config))
+  (constant $ backgroundColor config)
+  (vecAdd (vecTimes ambient color)
+          (vecTimes direct  color)
+  )
+  where
+    point        = A.fst ray
+    (d,color)    = (unlift $ evaluate config ray) :: (Exp Float, Exp Color)
     ambient      = constant $ ambientLight config
-    direct       = vecScale directFactor directColor
+    direct       = vecScale (directFactor * shadowFactor) directColor
     directFactor = vecDot normal $ vecNormalize $ vecSub directPos point
     normal       = approxNormal config point
     directPos    = constant $ P.fst $ pointLight config
     directColor  = constant $ P.snd $ pointLight config
+
+toneMap :: Exp Color -> Exp (Word8, Word8, Word8)
+toneMap color = lift (trueComponent r, trueComponent g, trueComponent b)
+  where
+    (r,g,b)         = (unlift color) :: (Exp Float, Exp Float, Exp Float)
+    trueComponent c = cond (c >* 1) (constant 255) (A.floor $ c * 255)
+
+genShadowSamples :: Config -> Acc (Array DIM3 Float)
+genShadowSamples config = 
+  generate (lift $ resolutionShape config :. n)
+           (\ix -> let Z:.(_::Exp Int):.(_::Exp Int):.(i::Exp Int) = unlift ix
+                   in
+                     sample i
+           )
+  where
+    n        = constant $ numShadowSamples config
+    sample i = (A.fromIntegral $ i + 1) / (A.fromIntegral $ n + 1)
 
 approxNormal :: Config -> Exp Position -> Exp Normal
 approxNormal config point = vecNormalize $ lift (nX, nY, nZ)
@@ -54,20 +90,9 @@ approxNormal config point = vecNormalize $ lift (nX, nY, nZ)
     epsY = constant (0, eps, 0)
     epsZ = constant (0, 0, eps)
 
-marchAll :: Config -> Acc (Array DIM2 Ray)
-marchAll config = 
-  A.map (A.iterate (constant $ numSteps config) $ march $ distanceField config) 
-        (genRays config)
-
-march :: DistanceField -> Exp Ray -> Exp Ray
-march f ray = moveOrigin (A.fst $ evaluate f ray) ray
-
-evaluate :: DistanceField -> Exp Ray -> Exp (Float, Color)
-evaluate f ray = f $ A.fst ray
-
 genRays :: Config -> Acc (Array DIM2 Ray)
 genRays config =
-  generate (constant $ Z:.resH:.resW)
+  generate (resolutionShape config)
            (\ix -> let Z:.(y::Exp Int):.(x::Exp Int) = unlift ix
                    in
                      lift (cPos, rayDir x y))
@@ -85,3 +110,11 @@ genRays config =
       where
         x' = (constant cW) * (((A.fromIntegral x) + 0.5) / (A.fromIntegral $ constant resW))
         y' = (constant cH) * (((A.fromIntegral y) + 0.5) / (A.fromIntegral $ constant resH))
+
+evaluate :: Config -> Exp Ray -> Exp (Float, Color)
+evaluate config ray = distanceField config $ A.fst ray
+
+resolutionShape :: Config -> Exp DIM2
+resolutionShape config = index2 (constant resH) (constant resW)
+  where
+    (resW, resH) = resolution config

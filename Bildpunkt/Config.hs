@@ -11,4 +11,6 @@ data Config = Config {
   , backgroundColor     :: Color
   , pointLight          :: PointLight
   , ambientLight        :: Color
+  , shadowBlur          :: Float
+  , numShadowSamples    :: Int
   }

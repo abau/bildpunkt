@@ -62,3 +62,6 @@ vecAdd = lift2 $ \(x :: Exp Float, y :: Exp Float, z :: Exp Float)
 
 vecInvert :: Exp Vector -> Exp Vector
 vecInvert = lift1 $ \(x :: Exp Float, y :: Exp Float, z :: Exp Float) -> (-x,-y,-z)
+
+min2 :: Exp Float -> Exp Float -> Exp Float
+min2 a b = cond (a <* b) a b
