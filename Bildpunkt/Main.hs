@@ -19,13 +19,13 @@ main = savePngImage "test.png" $ ImageRGB8 $ generateImage writePixel resW resH
                           , camera           = ((5,1,0), (-1,0,0), 2, 2)
                           , resolution       = (800, 800)
                           , numSteps         = 1000
-                          , distanceField    = union ( move   (0,1,0) 
-                                                     $ sphere (1, 0.5, 0.5) 1
-                                                     )
-                                             $ plane white (0,1,0)
+                          , distanceField    = scene
                           , backgroundColor  = black
                           , pointLight       = ((3,3,2), (1.0, 1.0, 1.0))
                           , ambientLight     = (0.3, 0.3, 0.3)
                           , shadowBlur       = 30
-                          , numShadowSamples = 50
+                          , numShadowSamples = 100
                           }
+
+    scene = union (move   (0,1,0) $ sphere (1, 0.5, 0.5) 1)
+          $ plane white (0,1,0)

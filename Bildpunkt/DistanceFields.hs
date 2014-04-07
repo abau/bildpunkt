@@ -25,3 +25,10 @@ intersection f1 f2 x = cond ( (fst r1) <* (fst r2) ) r2 r1
   where
     r1 = f1 x
     r2 = f2 x
+
+subtract :: DistanceField -> DistanceField -> DistanceField
+subtract f1 f2 x = cond ( (fst r1) <* (-d2) ) invR2 r1
+  where
+    r1      = f1 x
+    (d2,c2) = unlift (f2 x) :: (Exp Float, Exp Color)
+    invR2   = lift (-d2, c2)
