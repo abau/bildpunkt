@@ -1,5 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Bildpunkt.DistanceFields where
+module Bildpunkt.DistanceField where
 
 import Prelude hiding ((++),fst)
 import Data.Array.Accelerate hiding (Vector)

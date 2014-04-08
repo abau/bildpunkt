@@ -1,6 +1,6 @@
 import           Data.Array.Accelerate (indexArray,Z(..),(:.)(..))
 import           Codec.Picture (savePngImage,generateImage,DynamicImage(..),PixelRGB8(..))
-import           Bildpunkt.DistanceFields
+import           Bildpunkt.DistanceField
 import           Bildpunkt.Common
 import           Bildpunkt.Renderer (render)
 import           Bildpunkt.Config
