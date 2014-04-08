@@ -9,6 +9,7 @@ import Data.Array.Accelerate as A
 import Data.Array.Accelerate.CUDA as C
 import Bildpunkt.Common
 import Bildpunkt.Config
+import Bildpunkt.DistanceField (DistanceField (..))
 
 render :: Config -> Array DIM2 (Word8, Word8, Word8)
 render config = C.run $ let 
@@ -24,20 +25,20 @@ marchAll config =
         (genRays config)
 
   where
-    march ray = moveOrigin (A.fst $ evaluate config ray) ray
+    march ray = moveOrigin (evaluateRay config ray) ray
 
 evaluateShadowSamples :: Config -> Acc (Array DIM2 Ray) -> Acc (Array DIM2 Float)
 evaluateShadowSamples config rays = 
-    A.fold1 min2
+    A.fold1 min
   $ A.zipWith eval (genShadowSamples config)
                    (A.replicate (lift $ Z:.All:.All:.n) rays)
   where
     eval t ray = cond (d <* (constant $ epsilon config) )
                       (constant 0)
-                      (min2 (constant 1) blur)
+                      (min (constant 1) blur)
       where 
-        d        = A.fst $ distanceField config
-                         $ vecAdd point (vecScale t lightDir)
+        d        = evaluate (distanceField config)
+                            (vecAdd point $ vecScale t lightDir)
         lightDir = vecSub (constant $ P.fst $ pointLight config) point
         lightD   = vecLength lightDir
         point    = A.fst ray
@@ -53,7 +54,7 @@ shade config ray shadowFactor = cond (d >* (constant $ epsilon config))
   )
   where
     point        = A.fst ray
-    (d,color)    = (unlift $ evaluate config ray) :: (Exp Float, Exp Color)
+    (d,color)    = (unlift $ evaluateColorRay config ray) :: (Exp Float, Exp Color)
     ambient      = constant $ ambientLight config
     direct       = vecScale (directFactor * shadowFactor) directColor
     directFactor = vecDot normal $ vecNormalize $ vecSub directPos point
@@ -84,7 +85,7 @@ approxNormal config point = vecNormalize $ lift (nX, nY, nZ)
     nX   = (f (vecAdd point epsX)) - (f (vecSub point epsX))
     nY   = (f (vecAdd point epsY)) - (f (vecSub point epsY))
     nZ   = (f (vecAdd point epsZ)) - (f (vecSub point epsZ))
-    f    = A.fst . distanceField config
+    f    = evaluate $ distanceField config
     eps  = epsilon config
     epsX = constant (eps, 0, 0)
     epsY = constant (0, eps, 0)
@@ -111,8 +112,11 @@ genRays config =
         x' = (constant cW) * (((A.fromIntegral x) + 0.5) / (A.fromIntegral $ constant resW))
         y' = (constant cH) * (((A.fromIntegral y) + 0.5) / (A.fromIntegral $ constant resH))
 
-evaluate :: Config -> Exp Ray -> Exp (Float, Color)
-evaluate config ray = distanceField config $ A.fst ray
+evaluateRay :: Config -> Exp Ray -> Exp Float
+evaluateRay config ray = evaluate (distanceField config) $ A.fst ray
+
+evaluateColorRay :: Config -> Exp Ray -> Exp (Float, Color)
+evaluateColorRay config ray = evaluateColor (distanceField config) $ A.fst ray
 
 resolutionShape :: Config -> Exp DIM2
 resolutionShape config = index2 (constant resH) (constant resW)

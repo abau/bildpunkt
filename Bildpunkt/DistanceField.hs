@@ -5,30 +5,56 @@ import Prelude hiding ((++),fst)
 import Data.Array.Accelerate hiding (Vector)
 import Bildpunkt.Common
 
+data DistanceField = DistanceField {
+    evaluate      :: Exp Vector -> Exp Float
+  , evaluateColor :: Exp Vector -> Exp (Float, Color)
+  }
+
+withColor :: Color -> (Exp Vector -> Exp Float) -> DistanceField
+withColor color eval = DistanceField eval $ \v -> lift (eval v, constant color)
+
 sphere :: Color -> Float -> DistanceField
-sphere color r x = lift (vecLength x - (constant r), constant color)
+sphere c r = withColor c $ \p -> vecLength p - (constant r)
+
+box :: Color -> Vector -> DistanceField
+box c m = withColor c $ \p -> vecLength $ vecMax (constant (0,0,0)) (vecSub (vecAbs p) 
+                                                                            (constant m))
 
 plane :: Color -> Direction -> DistanceField
-plane color n x = lift (vecDot x $ vecNormalize $ constant n, constant color)
-
-move :: Position -> DistanceField -> DistanceField
-move p f x = f $ vecSub x (constant p)
+plane c n = withColor c $ \p -> vecDot p $ vecNormalize $ constant n
 
 union :: DistanceField -> DistanceField -> DistanceField
-union f1 f2 x = cond ( (fst r1) <* (fst r2) ) r1 r2
-  where
-    r1 = f1 x
-    r2 = f2 x
+union f1 f2 = DistanceField 
+  (\p -> min (evaluate f1 p) (evaluate f2 p))
+  (\p -> let r1 = evaluateColor f1 p
+             r2 = evaluateColor f2 p
+         in
+           cond ( (fst r1) <* (fst r2) ) r1 r2
+  )
 
 intersection :: DistanceField -> DistanceField -> DistanceField
-intersection f1 f2 x = cond ( (fst r1) <* (fst r2) ) r2 r1
-  where
-    r1 = f1 x
-    r2 = f2 x
+intersection f1 f2 = DistanceField 
+  (\p -> max (evaluate f1 p) (evaluate f2 p))
+  (\p -> let r1 = evaluateColor f1 p
+             r2 = evaluateColor f2 p
+         in
+           cond ( (fst r1) >* (fst r2) ) r1 r2
+  )
 
 subtract :: DistanceField -> DistanceField -> DistanceField
-subtract f1 f2 x = cond ( (fst r1) <* (-d2) ) invR2 r1
-  where
-    r1      = f1 x
-    (d2,c2) = unlift (f2 x) :: (Exp Float, Exp Color)
-    invR2   = lift (-d2, c2)
+subtract f1 f2 = DistanceField 
+  (\p -> max (evaluate f1 p) (- (evaluate f2 p)))
+  (\p -> let r1      = evaluateColor f1 p
+             (d2,c2) = unlift (evaluateColor f2 p) :: (Exp Float, Exp Color)
+             invR2   = lift (-d2, c2)
+         in
+           cond ( (fst r1) >* (fst invR2) ) r1 invR2 
+  )
+
+move :: Position -> DistanceField -> DistanceField
+move t = transform $ \p -> vecSub p $ constant t
+
+transform :: (Exp Vector -> Exp Vector) -> DistanceField -> DistanceField
+transform t f = DistanceField
+  (\p -> evaluate      f $ t p)
+  (\p -> evaluateColor f $ t p)

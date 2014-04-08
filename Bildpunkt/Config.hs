@@ -1,6 +1,7 @@
 module Bildpunkt.Config where
 
 import Bildpunkt.Common
+import Bildpunkt.DistanceField (DistanceField)
 
 data Config = Config {
     epsilon             :: Float

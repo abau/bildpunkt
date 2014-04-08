@@ -11,7 +11,6 @@ type Ray           = (Position, Direction)
 type Camera        = (Position, Direction, Float, Float)
 type Resolution    = (Int,Int)
 type Color         = Vector
-type DistanceField = Exp Vector -> Exp (Float, Color)
 type PointLight    = (Position, Color)
 
 red,green,blue,black,white :: Color
@@ -33,6 +32,20 @@ vecLength = sqrt . vecLengthSqr
 
 vecLengthSqr :: Exp Vector -> Exp Float
 vecLengthSqr v = vecDot v v
+
+vecAbs :: Exp Vector -> Exp Vector
+vecAbs = lift1 $ \(x :: Exp Float, y :: Exp Float, z :: Exp Float) 
+               -> (abs x, abs y, abs z)
+
+vecMax :: Exp Vector -> Exp Vector -> Exp Vector
+vecMax = lift2 $ \(x :: Exp Float, y :: Exp Float, z :: Exp Float) 
+                  (u :: Exp Float, v :: Exp Float, w :: Exp Float) 
+               -> (max x u, max y v, max z w)
+
+vecMin :: Exp Vector -> Exp Vector -> Exp Vector
+vecMin = lift2 $ \(x :: Exp Float, y :: Exp Float, z :: Exp Float) 
+                  (u :: Exp Float, v :: Exp Float, w :: Exp Float) 
+               -> (min x u, min y v, min z w)
 
 vecCross :: Exp Vector -> Exp Vector -> Exp Vector
 vecCross = lift2 $ \(x :: Exp Float, y :: Exp Float, z :: Exp Float) 
@@ -62,6 +75,3 @@ vecAdd = lift2 $ \(x :: Exp Float, y :: Exp Float, z :: Exp Float)
 
 vecInvert :: Exp Vector -> Exp Vector
 vecInvert = lift1 $ \(x :: Exp Float, y :: Exp Float, z :: Exp Float) -> (-x,-y,-z)
-
-min2 :: Exp Float -> Exp Float -> Exp Float
-min2 a b = cond (a <* b) a b
