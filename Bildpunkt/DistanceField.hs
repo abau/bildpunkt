@@ -32,6 +32,9 @@ union f1 f2 = DistanceField
            cond ( (fst r1) <* (fst r2) ) r1 r2
   )
 
+unions :: [DistanceField] -> DistanceField
+unions = foldl1 union
+
 intersection :: DistanceField -> DistanceField -> DistanceField
 intersection f1 f2 = DistanceField 
   (\p -> max (evaluate f1 p) (evaluate f2 p))
@@ -40,6 +43,9 @@ intersection f1 f2 = DistanceField
          in
            cond ( (fst r1) >* (fst r2) ) r1 r2
   )
+
+intersections :: [DistanceField] -> DistanceField
+intersections = foldl1 intersection
 
 subtract :: DistanceField -> DistanceField -> DistanceField
 subtract f1 f2 = DistanceField 

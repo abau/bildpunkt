@@ -16,7 +16,7 @@ main = savePngImage "test.png" $ ImageRGB8 $ generateImage writePixel resW resH
 
     (resW, resH) = resolution config
     config       = Config { epsilon          = 0.001
-                          , camera           = ((5,1,0), (-1,0,0), 2, 2)
+                          , camera           = ((5,2.5,0), (-1,0,0), 3, 3)
                           , resolution       = (800, 800)
                           , numSteps         = 1000
                           , distanceField    = scene
@@ -27,5 +27,7 @@ main = savePngImage "test.png" $ ImageRGB8 $ generateImage writePixel resW resH
                           , numShadowSamples = 100
                           }
 
-    scene = union (move (0,1,0) $ sphere (1, 0.5, 0.5) 1)
-          $ plane white (0,1,0)
+    scene = unions [ move (0,1,0)  $ sphere (1, 0.5, 0.5) 1
+                   , move (1,1,2) $ box    (0.5, 0.5, 1) (1,1,1)
+                   , plane white (0,1,0)
+                   ]
