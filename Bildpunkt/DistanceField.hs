@@ -57,8 +57,8 @@ subtract f1 f2 = DistanceField
            cond ( (fst r1) >* (fst invR2) ) r1 invR2 
   )
 
-move :: Position -> DistanceField -> DistanceField
-move t = transform $ \p -> vecSub p $ constant t
+translate :: Position -> DistanceField -> DistanceField
+translate t = transform $ \p -> vecSub p $ constant t
 
 transform :: (Exp Vector -> Exp Vector) -> DistanceField -> DistanceField
 transform t f = DistanceField
