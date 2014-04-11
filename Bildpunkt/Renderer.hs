@@ -100,7 +100,7 @@ genRays config =
   where
     (cPos,cLookAt,fov) = camera config
     (iW,iH)            = resolution config
-    fovRad             = fov * pi / 180
+    fovRad             = toRadian' fov
     cW                 = 2 * tan (fovRad / 2)
     cH                 = cW * (P.fromIntegral iH) / (P.fromIntegral iW)
     cDir               = vecNormalize' $ vecSub' cLookAt cPos 

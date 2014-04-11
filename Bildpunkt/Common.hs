@@ -102,3 +102,9 @@ vecInvert = lift1 (vecInvert' :: UnliftedVector -> UnliftedVector)
 
 vecInvert' :: Num a => (a,a,a) -> (a,a,a)
 vecInvert' (x, y, z) = (-x,-y,-z)
+
+toRadian :: Exp Float -> Exp Float
+toRadian = lift . toRadian'
+
+toRadian' :: Floating a => a -> a
+toRadian' x = x * pi / 180
