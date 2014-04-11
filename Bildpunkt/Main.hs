@@ -24,4 +24,5 @@ main = getArgs >>= \case
         config       = case sceneName of
           "default" -> defaultConfig
           "simple1" -> Scene.simple1
+          "simple2" -> Scene.simple2
           scene     -> error $ "unknown scene '" ++ scene ++ "'"
