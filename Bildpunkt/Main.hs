@@ -27,7 +27,7 @@ main = savePngImage "test.png" $ ImageRGB8 $ generateImage writePixel resW resH
                           , numShadowSamples = 100
                           }
 
-    scene = unions [ translate (0,1,0)  $ sphere (1, 0.5, 0.5) 1
+    scene = unions [ translate (0,1,0) $ sphere (1, 0.5, 0.5) 1
                    , translate (1,1,2) $ box    (0.5, 0.5, 1) (1,1,1)
                    , plane white (0,1,0)
                    ]

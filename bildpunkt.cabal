@@ -13,7 +13,12 @@ Description:      Complexity concerned constraint compiler
 Executable bildpunkt
   Main-is:            Bildpunkt/Main.hs
   Ghc-options:        -W -fno-warn-incomplete-patterns -threaded
-  Build-Depends:      base >= 4.2 && < 5.0
+  Build-Depends:      base
                     , accelerate == 0.14.*
                     , accelerate-cuda == 0.14.*
                     , JuicyPixels == 3.1.*
+
+  Other-Modules:      Bildpunkt.Common
+                    , Bildpunkt.Config
+                    , Bildpunkt.DistanceField
+                    , Bildpunkt.Renderer
