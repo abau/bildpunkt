@@ -98,19 +98,24 @@ genRays config =
                    in
                      lift (cPos, rayDir x y))
   where
-    (cPos,cDir,cW,cH) = camera config
-    (resW, resH)      = resolution config
-    cRight            = vecNormalize $ vecCross (constant cDir) $ constant (0.0, 1.0, 0.0)
-    cUp               = vecNormalize $ vecCross cRight (constant cDir)
-    cLowerLeft        = vecAdd (vecScale (constant $ cW * (-0.5)) cRight)
-                               (vecScale (constant $ cH * (-0.5)) cUp)
-    rayDir x y        = vecNormalize $ vecAdd (constant cDir)
-                                     $ vecAdd cLowerLeft
-                                     $ vecAdd (vecScale x' cRight)
-                                              (vecScale y' cUp   )
+    (cPos,cLookAt,fov) = camera config
+    (iW,iH)            = resolution config
+    fovRad             = fov * pi / 180
+    cW                 = 2 * tan (fovRad / 2)
+    cH                 = cW * (P.fromIntegral iH) / (P.fromIntegral iW)
+    cDir               = vecNormalize' $ vecSub' cLookAt cPos 
+    (resW, resH)       = resolution config
+    cRight             = vecNormalize' $ vecCross' cDir (0.0, 1.0, 0.0)
+    cUp                = vecNormalize' $ vecCross' cRight cDir
+    cLowerLeft         = vecAdd' (vecScale' (cW * (-0.5)) cRight)
+                                 (vecScale' (cH * (-0.5)) cUp)
+    rayDir x y         = vecNormalize $ vecAdd (constant cDir)
+                                      $ vecAdd (constant cLowerLeft)
+                                      $ vecAdd (vecScale x' $ constant cRight)
+                                               (vecScale y' $ constant cUp   )
       where
-        x' = (constant cW) * (((A.fromIntegral x) + 0.5) / (A.fromIntegral $ constant resW))
-        y' = (constant cH) * (((A.fromIntegral y) + 0.5) / (A.fromIntegral $ constant resH))
+        x' = (constant cW) * (((A.fromIntegral x) + 0.5) / (constant $ P.fromIntegral resW))
+        y' = (constant cH) * (((A.fromIntegral y) + 0.5) / (constant $ P.fromIntegral resH))
 
 evaluateRay :: Config -> Exp Ray -> Exp Float
 evaluateRay config ray = evaluate (distanceField config) $ A.fst ray

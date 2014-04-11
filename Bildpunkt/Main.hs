@@ -16,7 +16,7 @@ main = savePngImage "test.png" $ ImageRGB8 $ generateImage writePixel resW resH
 
     (resW, resH) = resolution config
     config       = Config { epsilon          = 0.001
-                          , camera           = ((5,2.5,0), (-1,0,0), 3, 3)
+                          , camera           = ((10,3,-5), (0,1,0), 45)
                           , resolution       = (800, 800)
                           , numSteps         = 1000
                           , distanceField    = scene
