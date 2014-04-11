@@ -15,7 +15,8 @@ render :: Config -> Array DIM2 (Word8, Word8, Word8)
 render config = C.run $ let 
   rays          = marchAll config
   shadowSamples = evaluateShadowSamples config rays
-  shadings      = A.zipWith (shade config) rays shadowSamples
+  aoSamples     = evaluateAOSamples config rays
+  shadings      = A.zipWith3 (shade config) rays shadowSamples aoSamples
   in
     A.map toneMap shadings
 
@@ -55,18 +56,17 @@ evaluateShadowSamples config rays =
   $ A.zipWith eval genShadowSamples 
   $ A.replicate (lift $ Z:.All:.All:.n) rays
   where
+    n = constant $ numShadowSamples config
+
     eval t ray = cond (d <* (constant $ epsilon config) )
                       (constant 0)
                       (min (constant 1) blur)
       where 
-        d        = evaluate (distanceField config)
-                            (vecAdd point $ vecScale t lightDir)
+        d        = evaluate (distanceField config) (vecAdd point $ vecScale t lightDir)
         lightDir = vecSub (constant $ P.fst $ pointLight config) point
         lightD   = vecLength lightDir
         point    = A.fst ray
         blur     = ((constant $ shadowBlur config) * d) / (t * lightD)
-
-    n = constant $ numShadowSamples config
 
     genShadowSamples = 
       generate (lift $ resolutionShape config :. n)
@@ -77,8 +77,32 @@ evaluateShadowSamples config rays =
 
     genSample i = (A.fromIntegral $ i + 1) / (A.fromIntegral $ n + 1)
 
-shade :: Config -> Exp Ray -> Exp Float -> Exp Color
-shade config ray shadowFactor = cond (d >* (constant $ epsilon config))
+evaluateAOSamples :: Config -> Acc (Array DIM2 Ray) -> Acc (Array DIM2 Float)
+evaluateAOSamples config rays =
+    A.map (\s -> 1 - (constant (aoIntensity config) * s))
+  $ A.fold1 (+)
+  $ A.zipWith eval genAOSamples 
+  $ A.replicate (lift $ Z:.All:.All:.n) rays
+  where
+    n          = constant $ numAOSamples config
+    delta      = constant $ aoDistance config
+    eval i ray = (t - d) / (2 ** i')
+      where 
+        i'     = (A.fromIntegral i) :: Exp Float
+        normal = approxNormal config point
+        d      = evaluate (distanceField config) (vecAdd point $ vecScale t normal)
+        point  = A.fst ray
+        t      = (A.fromIntegral $ i + 1) * delta
+    
+    genAOSamples =
+      generate (lift $ resolutionShape config :. n)
+               (\ix -> let Z:.(_::Exp Int):.(_::Exp Int):.(i::Exp Int) = unlift ix
+                       in
+                         i
+               )
+
+shade :: Config -> Exp Ray -> Exp Float -> Exp Float -> Exp Color
+shade config ray shadowFactor aoFactor = cond (d >* (constant $ epsilon config))
   (constant $ backgroundColor config)
   (vecAdd (vecTimes ambient color)
           (vecTimes direct  color)
@@ -86,7 +110,7 @@ shade config ray shadowFactor = cond (d >* (constant $ epsilon config))
   where
     point        = A.fst ray
     (d,color)    = (unlift $ evaluateColorRay config ray) :: (Exp Float, Exp Color)
-    ambient      = constant $ ambientLight config
+    ambient      = vecScale aoFactor $ constant $ ambientLight config
     direct       = vecScale (directFactor * shadowFactor) directColor
     directFactor = vecDot normal $ vecNormalize $ vecSub directPos point
     normal       = approxNormal config point

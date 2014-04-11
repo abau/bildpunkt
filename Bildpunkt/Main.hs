@@ -25,9 +25,13 @@ main = savePngImage "test.png" $ ImageRGB8 $ generateImage writePixel resW resH
                           , ambientLight     = (0.3, 0.3, 0.3)
                           , shadowBlur       = 30
                           , numShadowSamples = 100
+                          , numAOSamples     = 10
+                          , aoDistance       = 0.1
+                          , aoIntensity      = 1
                           }
 
     scene = unions [ translate (0,1,0) $ sphere (1, 0.5, 0.5) 1
-                   , translate (1,1,2) $ box    (0.5, 0.5, 1) (1,1,1)
+                   , translate (1,1,2) $ box white (1,1,1)
+                   , translate (1,2.3,2) $ rotateY 20 $ box (0.5, 0.5, 1) (0.3,0.3,0.3)
                    , plane white (0,1,0)
                    ]

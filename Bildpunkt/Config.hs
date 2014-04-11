@@ -14,4 +14,7 @@ data Config = Config {
   , ambientLight        :: Color
   , shadowBlur          :: Float
   , numShadowSamples    :: Int
+  , numAOSamples        :: Int
+  , aoDistance          :: Float
+  , aoIntensity         :: Float
   }

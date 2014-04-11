@@ -60,6 +60,16 @@ subtract f1 f2 = DistanceField
 translate :: Position -> DistanceField -> DistanceField
 translate t = transform $ \p -> vecSub p $ constant t
 
+rotateY :: Float -> DistanceField -> DistanceField
+rotateY a = transform $ \p -> 
+  let sinA = sin $ toRadian' (-a)
+      cosA = cos $ toRadian' (-a)
+  in
+    lift $ ( (vecDot p $ constant (cosA, 0, sinA))
+           , (vecDot p $ constant (0,1,0))
+           , (vecDot p $ constant (-sinA, 0, cosA)) 
+           )
+
 transform :: (Exp Vector -> Exp Vector) -> DistanceField -> DistanceField
 transform t f = DistanceField
   (\p -> evaluate      f $ t p)
