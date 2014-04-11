@@ -26,9 +26,9 @@ simple2 = defaultConfig
                       (box orange (1,1,1))
                       ( unions [              cylinder orange 3 0.7
                                , rotateX 90 $ cylinder orange 3 0.7
-                               , rotateZ 90 $ cylinder orange 3 0.7
+                               , rotateZ 45 $ cylinder orange 3 0.7
                                ]))
-                   (sphere orange 1.4)
+                   (sphere blue 1.4)
   }
   where 
     orange = (1, 0.7, 0.3)
