@@ -20,18 +20,40 @@ render config = C.run $ let
     A.map toneMap shadings
 
 marchAll :: Config -> Acc (Array DIM2 Ray)
-marchAll config = 
-  A.map (A.iterate (constant $ numSteps config) $ march) 
-        (genRays config)
-
+marchAll config = A.map (A.iterate (constant $ numSteps config) $ march) genRays
   where
     march ray = moveOrigin (evaluateRay config ray) ray
+
+    genRays =
+      generate (resolutionShape config)
+               (\ix -> let Z:.(y::Exp Int):.(x::Exp Int) = unlift ix
+                       in
+                         lift (cPos, rayDir x y))
+      where
+        (cPos,cLookAt,fov) = camera config
+        (iW,iH)            = resolution config
+        fovRad             = toRadian' fov
+        cW                 = 2 * tan (fovRad / 2)
+        cH                 = cW * (P.fromIntegral iH) / (P.fromIntegral iW)
+        cDir               = vecNormalize' $ vecSub' cLookAt cPos 
+        (resW, resH)       = resolution config
+        cRight             = vecNormalize' $ vecCross' cDir (0.0, 1.0, 0.0)
+        cUp                = vecNormalize' $ vecCross' cRight cDir
+        cLowerLeft         = vecAdd' (vecScale' (cW * (-0.5)) cRight)
+                                     (vecScale' (cH * (-0.5)) cUp)
+        rayDir x y         = vecNormalize $ vecAdd (constant cDir)
+                                          $ vecAdd (constant cLowerLeft)
+                                          $ vecAdd (vecScale x' $ constant cRight)
+                                                   (vecScale y' $ constant cUp   )
+          where
+            x' = (constant cW) * (((A.fromIntegral x) + 0.5) / (constant $ P.fromIntegral resW))
+            y' = (constant cH) * (((A.fromIntegral y) + 0.5) / (constant $ P.fromIntegral resH))
 
 evaluateShadowSamples :: Config -> Acc (Array DIM2 Ray) -> Acc (Array DIM2 Float)
 evaluateShadowSamples config rays = 
     A.fold1 min
-  $ A.zipWith eval (genShadowSamples config)
-                   (A.replicate (lift $ Z:.All:.All:.n) rays)
+  $ A.zipWith eval genShadowSamples 
+  $ A.replicate (lift $ Z:.All:.All:.n) rays
   where
     eval t ray = cond (d <* (constant $ epsilon config) )
                       (constant 0)
@@ -45,6 +67,15 @@ evaluateShadowSamples config rays =
         blur     = ((constant $ shadowBlur config) * d) / (t * lightD)
 
     n = constant $ numShadowSamples config
+
+    genShadowSamples = 
+      generate (lift $ resolutionShape config :. n)
+               (\ix -> let Z:.(_::Exp Int):.(_::Exp Int):.(i::Exp Int) = unlift ix
+                       in
+                         genSample i
+               )
+
+    genSample i = (A.fromIntegral $ i + 1) / (A.fromIntegral $ n + 1)
 
 shade :: Config -> Exp Ray -> Exp Float -> Exp Color
 shade config ray shadowFactor = cond (d >* (constant $ epsilon config))
@@ -68,17 +99,6 @@ toneMap color = lift (trueComponent r, trueComponent g, trueComponent b)
     (r,g,b)         = (unlift color) :: (Exp Float, Exp Float, Exp Float)
     trueComponent c = cond (c >* 1) (constant 255) (A.floor $ c * 255)
 
-genShadowSamples :: Config -> Acc (Array DIM3 Float)
-genShadowSamples config = 
-  generate (lift $ resolutionShape config :. n)
-           (\ix -> let Z:.(_::Exp Int):.(_::Exp Int):.(i::Exp Int) = unlift ix
-                   in
-                     sample i
-           )
-  where
-    n        = constant $ numShadowSamples config
-    sample i = (A.fromIntegral $ i + 1) / (A.fromIntegral $ n + 1)
-
 approxNormal :: Config -> Exp Position -> Exp Normal
 approxNormal config point = vecNormalize $ lift (nX, nY, nZ)
   where
@@ -90,32 +110,6 @@ approxNormal config point = vecNormalize $ lift (nX, nY, nZ)
     epsX = constant (eps, 0, 0)
     epsY = constant (0, eps, 0)
     epsZ = constant (0, 0, eps)
-
-genRays :: Config -> Acc (Array DIM2 Ray)
-genRays config =
-  generate (resolutionShape config)
-           (\ix -> let Z:.(y::Exp Int):.(x::Exp Int) = unlift ix
-                   in
-                     lift (cPos, rayDir x y))
-  where
-    (cPos,cLookAt,fov) = camera config
-    (iW,iH)            = resolution config
-    fovRad             = toRadian' fov
-    cW                 = 2 * tan (fovRad / 2)
-    cH                 = cW * (P.fromIntegral iH) / (P.fromIntegral iW)
-    cDir               = vecNormalize' $ vecSub' cLookAt cPos 
-    (resW, resH)       = resolution config
-    cRight             = vecNormalize' $ vecCross' cDir (0.0, 1.0, 0.0)
-    cUp                = vecNormalize' $ vecCross' cRight cDir
-    cLowerLeft         = vecAdd' (vecScale' (cW * (-0.5)) cRight)
-                                 (vecScale' (cH * (-0.5)) cUp)
-    rayDir x y         = vecNormalize $ vecAdd (constant cDir)
-                                      $ vecAdd (constant cLowerLeft)
-                                      $ vecAdd (vecScale x' $ constant cRight)
-                                               (vecScale y' $ constant cUp   )
-      where
-        x' = (constant cW) * (((A.fromIntegral x) + 0.5) / (constant $ P.fromIntegral resW))
-        y' = (constant cH) * (((A.fromIntegral y) + 0.5) / (constant $ P.fromIntegral resH))
 
 evaluateRay :: Config -> Exp Ray -> Exp Float
 evaluateRay config ray = evaluate (distanceField config) $ A.fst ray
