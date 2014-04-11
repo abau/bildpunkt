@@ -22,3 +22,4 @@ Executable bildpunkt
                     , Bildpunkt.Config
                     , Bildpunkt.DistanceField
                     , Bildpunkt.Renderer
+                    , Bildpunkt.Scene
